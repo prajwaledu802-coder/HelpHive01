@@ -2,9 +2,9 @@ services:
   - type: web
     name: helphive-api
     runtime: node
-    rootDir: server
-    buildCommand: npm install
-    startCommand: npm start
+    rootDir: .
+    buildCommand: npm --prefix ./server install
+    startCommand: npm --prefix ./server run start
     envVars:
       - key: NODE_ENV
         value: production
