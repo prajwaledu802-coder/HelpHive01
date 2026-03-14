@@ -18,6 +18,7 @@ const RegisterPage = () => {
   });
   const [role, setRole] = useState('volunteer');
   const [error, setError] = useState('');
+  const [quickCreds, setQuickCreds] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { register, loginAsRole, loginWithGoogle } = useAuth();
@@ -34,6 +35,7 @@ const RegisterPage = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setQuickCreds('');
     try {
       await register({
         fullName: form.fullName,
@@ -55,6 +57,7 @@ const RegisterPage = () => {
 
   const handleQuickRole = async (nextRole) => {
     setError('');
+    setQuickCreds('');
     try {
       await loginAsRole(nextRole);
       navigate('/role-selection');
@@ -63,8 +66,36 @@ const RegisterPage = () => {
     }
   };
 
+  const handleQuickRegister = async (nextRole) => {
+    setError('');
+    setQuickCreds('');
+
+    const stamp = `${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
+    const email = `quick.${nextRole}.${stamp}@helphive.local`;
+    const password = 'Quick@1234';
+    const fullName = nextRole === 'admin' ? 'Quick Admin User' : 'Quick Volunteer User';
+
+    try {
+      await register({
+        fullName,
+        email,
+        password,
+        phone: '',
+        location: 'Auto Generated',
+        skills: nextRole === 'volunteer' ? ['coordination'] : [],
+        role: nextRole,
+      });
+
+      setQuickCreds(`Quick register success -> ${email} / ${password}`);
+      navigate('/role-selection');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Quick register failed');
+    }
+  };
+
   const handleGoogleRegister = async () => {
     setError('');
+    setQuickCreds('');
     try {
       const result = await signInWithPopup(firebaseAuth, firebaseGoogleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -155,6 +186,23 @@ const RegisterPage = () => {
         <div className="mt-4 grid grid-cols-2 gap-3">
           <AnimatedButton
             type="button"
+            onClick={() => handleQuickRegister('admin')}
+            className="w-full bg-slate-700 hover:bg-slate-800"
+          >
+            Quick Register Admin
+          </AnimatedButton>
+          <AnimatedButton
+            type="button"
+            onClick={() => handleQuickRegister('volunteer')}
+            className="w-full bg-slate-700 hover:bg-slate-800"
+          >
+            Quick Register Volunteer
+          </AnimatedButton>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <AnimatedButton
+            type="button"
             onClick={() => handleQuickRole('admin')}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
@@ -168,6 +216,8 @@ const RegisterPage = () => {
             Quick Volunteer
           </AnimatedButton>
         </div>
+
+        {quickCreds ? <p className="mt-3 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">{quickCreds}</p> : null}
 
         <p className="mt-4 text-center text-sm text-[var(--text-secondary)]">
           Already have an account? <Link to={`/login?role=${role}`} className="font-semibold text-[var(--accent-primary)]">Login</Link>
