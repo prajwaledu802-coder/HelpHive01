@@ -82,6 +82,13 @@ export const AuthProvider = ({ children }) => {
     setUser(data.user);
   };
 
+  const loginWithGoogle = async (credential, role = 'volunteer') => {
+    const { data } = await api.post('/auth/google', { credential, role });
+    localStorage.removeItem(OFFLINE_USER_KEY);
+    localStorage.setItem('ngo_token', data.token);
+    setUser(data.user);
+  };
+
   const loginOfflineByRole = (role) => {
     const fallbackUser = offlineRoleUsers[role];
     if (!fallbackUser) {
@@ -124,7 +131,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = useMemo(
-    () => ({ user, loading, login, register, loginAsRole, switchRole, logout }),
+    () => ({ user, loading, login, register, loginWithGoogle, loginAsRole, switchRole, logout }),
     [user, loading]
   );
 

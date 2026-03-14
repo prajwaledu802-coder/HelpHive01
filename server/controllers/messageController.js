@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { TABLES } from '../models/tableNames.js';
-import { insertRow, insertRows, listRows } from '../services/dataService.js';
+import { deleteRow, insertRow, insertRows, listRows } from '../services/dataService.js';
 import { emitRealtime } from '../services/realtimeService.js';
 
 const normalizePriority = (value) => {
@@ -69,4 +69,19 @@ export const createMessage = async (req, res) => {
   });
 
   return res.status(201).json(created);
+};
+
+export const deleteMessage = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: 'Message id is required' });
+  }
+
+  await deleteRow(TABLES.messages, id);
+
+  emitRealtime('message:deleted', {
+    id,
+  });
+
+  return res.json({ success: true, id });
 };

@@ -1,12 +1,39 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AnimatedButton from '../components/ui/AnimatedButton';
 import { useAuth } from '../context/AuthContext';
 
+const GOOGLE_SCRIPT_ID = 'google-identity-services';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+const loadGoogleScript = () =>
+  new Promise((resolve, reject) => {
+    if (window.google?.accounts?.id) {
+      resolve();
+      return;
+    }
+
+    const existing = document.getElementById(GOOGLE_SCRIPT_ID);
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Failed to load Google script')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = GOOGLE_SCRIPT_ID;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google script'));
+    document.head.appendChild(script);
+  });
+
 const LoginPage = () => {
-  const { login, loginAsRole, user } = useAuth();
+  const { login, loginAsRole, loginWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -14,18 +41,79 @@ const LoginPage = () => {
   const [role, setRole] = useState('volunteer');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleButtonRef = useRef(null);
+  const roleRef = useRef('volunteer');
 
   useEffect(() => {
     const roleFromQuery = searchParams.get('role');
     if (roleFromQuery === 'admin' || roleFromQuery === 'volunteer') {
       setRole(roleFromQuery);
+      roleRef.current = roleFromQuery;
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
 
   useEffect(() => {
     if (!user?.role) return;
     navigate('/role-selection', { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) {
+      return;
+    }
+
+    let mounted = true;
+
+    loadGoogleScript()
+      .then(() => {
+        if (!mounted || !window.google?.accounts?.id) return;
+
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (!response?.credential) {
+              setError('Google sign-in failed. Missing credential token.');
+              return;
+            }
+
+            setSubmitting(true);
+            setError('');
+            try {
+              await loginWithGoogle(response.credential, roleRef.current);
+            } catch (err) {
+              setError(err.response?.data?.message || 'Google login failed.');
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        });
+
+        googleButtonRef.current.innerHTML = '';
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          shape: 'pill',
+          width: 320,
+          text: 'continue_with',
+        });
+
+        setGoogleReady(true);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setGoogleReady(false);
+        setError('Unable to load Google sign-in. Check internet and client ID.');
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [loginWithGoogle]);
 
   const handleRoleLogin = async (role) => {
     setError('');
@@ -103,6 +191,25 @@ const LoginPage = () => {
           <AnimatedButton type="submit" className="w-full" disabled={submitting}>
             {submitting ? 'Signing in...' : 'Sign In'}
           </AnimatedButton>
+
+          <div className="relative py-1">
+            <div className="h-px w-full bg-[var(--border-muted)]" />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--bg-base)] px-2 text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
+              or
+            </span>
+          </div>
+
+          {GOOGLE_CLIENT_ID ? (
+            <div className="flex w-full justify-center">
+              <div ref={googleButtonRef} className="min-h-[40px]" />
+            </div>
+          ) : (
+            <p className="text-center text-xs text-amber-300">Set VITE_GOOGLE_CLIENT_ID to enable Google sign-in.</p>
+          )}
+
+          {GOOGLE_CLIENT_ID && !googleReady ? (
+            <p className="text-center text-xs text-[var(--text-muted)]">Preparing Google sign-in...</p>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-3">
             <AnimatedButton

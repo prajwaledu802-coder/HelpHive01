@@ -1,0 +1,9 @@
+name,email,city,state,skills,volunteer_hours,events_joined,impact_score,latitude,longitude
+Ravi Kumar,ravi@gmail.com,Bangalore,Karnataka,Medical Aid,120,5,88,12.9716,77.5946
+Ananya Sharma,ananya@gmail.com,Delhi,Delhi,Food Distribution,90,4,82,28.6139,77.2090
+Arjun Patel,arjun@gmail.com,Ahmedabad,Gujarat,Rescue Operations,150,6,95,23.0225,72.5714
+Sneha Reddy,sneha@gmail.com,Hyderabad,Telangana,Logistics,80,3,74,17.3850,78.4867
+Rahul Mehta,rahul@gmail.com,Mumbai,Maharashtra,First Aid,100,4,86,19.0760,72.8777
+Priya Singh,priya@gmail.com,Jaipur,Rajasthan,Shelter Management,75,2,69,26.9124,75.7873
+Karan Verma,karan@gmail.com,Chandigarh,Punjab,Emergency Support,110,5,89,30.7333,76.7794
+Neha Gupta,neha@gmail.com,Patna,Bihar,Medical Assistance,60,2,66,25.5941,85.1376

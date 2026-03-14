@@ -69,7 +69,10 @@ const MessagesPage = () => {
   };
 
   const handleDelete = (id) => {
-    setMessages(messages.filter((m) => m.id !== id));
+    api
+      .delete(`/messages/${id}`)
+      .then(() => loadMessages())
+      .catch((err) => setError(err.response?.data?.message || 'Unable to delete message.'));
   };
 
   const getTypeConfig = (type) => MESSAGE_TYPES.find((t) => t.value === type) || MESSAGE_TYPES[0];

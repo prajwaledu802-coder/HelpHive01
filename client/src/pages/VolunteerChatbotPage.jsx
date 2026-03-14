@@ -2,14 +2,16 @@ import { motion } from 'framer-motion';
 import { Bot, Send, User } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import PageHeader from '../components/ui/PageHeader';
+import { api } from '../services/api';
 
 const INITIAL_MESSAGES = [
-  { id: 1, sender: 'admin', name: 'HelpHive Admin', text: 'Welcome to HelpHive! Your volunteer registration has been approved.', time: '10:00 AM' },
-  { id: 2, sender: 'admin', name: 'HelpHive Admin', text: 'You have been assigned to the Flood Relief Camp in Assam. Please confirm your availability.', time: '10:15 AM' },
-  { id: 3, sender: 'volunteer', name: 'You', text: 'Thank you! I confirm my availability for the Assam relief camp.', time: '10:20 AM' },
-  { id: 4, sender: 'admin', name: 'HelpHive Admin', text: 'Great! Your deployment details: Report to Guwahati Base Camp by March 15, 6:00 AM. Travel kit will be provided.', time: '10:25 AM' },
-  { id: 5, sender: 'volunteer', name: 'You', text: 'Understood. Is there anything I should prepare beforehand?', time: '10:30 AM' },
-  { id: 6, sender: 'admin', name: 'HelpHive Admin', text: 'Please complete the First Aid training module in your profile before March 14. Also carry your ID proof and any medical certifications.', time: '10:35 AM' },
+  {
+    id: 1,
+    sender: 'admin',
+    name: 'HelpHive AI',
+    text: 'Hi, I am HelpHive AI. Ask me about volunteers, events, resources, or emergency coordination.',
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  },
 ];
 
 const VolunteerChatbotPage = () => {
@@ -23,35 +25,45 @@ const VolunteerChatbotPage = () => {
     }
   }, [messages]);
 
-  const handleSend = () => {
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
     if (!input.trim()) return;
+
+    const messageText = input.trim();
     const userMsg = {
       id: Date.now(),
       sender: 'volunteer',
       name: 'You',
-      text: input.trim(),
+      text: messageText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
-    setMessages([...messages, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
 
-    // Simulate admin auto-response
-    setTimeout(() => {
-      const responses = [
-        'Thank you for your message! An admin will respond shortly.',
-        'Your request has been noted. We\'ll get back to you within 24 hours.',
-        'Got it! Check the Activity Log for updates on your assignments.',
-        'Thanks for reaching out. Please visit the Events page for upcoming opportunities.',
-      ];
+    setSending(true);
+    try {
+      const { data } = await api.post('/ai/chatbot', { message: messageText });
       const botMsg = {
         id: Date.now() + 1,
         sender: 'admin',
-        name: 'HelpHive Bot',
-        text: responses[Math.floor(Math.random() * responses.length)],
+        name: 'HelpHive AI',
+        text: data.reply || data.answer || data.message || 'No response generated.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, botMsg]);
-    }, 1200);
+    } catch (error) {
+      const botMsg = {
+        id: Date.now() + 1,
+        sender: 'admin',
+        name: 'HelpHive AI',
+        text: error?.response?.data?.message || 'AI service is currently unavailable. Please try again.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -114,6 +126,7 @@ const VolunteerChatbotPage = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            disabled={sending}
             placeholder="Type a message..."
             className="flex-1 rounded-xl border border-[var(--border-muted)] bg-[var(--card-elevated)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
           />
@@ -121,7 +134,7 @@ const VolunteerChatbotPage = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || sending}
             className="cursor-pointer rounded-xl p-2.5 text-white disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #3a916d, #1a6b42)' }}
           >

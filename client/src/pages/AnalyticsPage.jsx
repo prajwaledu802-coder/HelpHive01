@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { FileSpreadsheet, Upload } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader';
 import SkeletonLoader from '../components/loader/SkeletonLoader';
 import { StaggerItem, StaggerSection } from '../components/ui/StaggerSection';
@@ -24,6 +25,10 @@ const AnalyticsPage = () => {
     resourceSeries: [],
     eventSeries: [],
   });
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [csvStatus, setCsvStatus] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -47,7 +52,34 @@ const AnalyticsPage = () => {
       )
       .catch((err) => setError(err.response?.data?.message || 'Unable to load analytics.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshTick]);
+
+  const uploadCsvAndRefresh = async () => {
+    if (!csvFile) return;
+
+    setCsvUploading(true);
+    setCsvStatus('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', csvFile);
+      const { data } = await api.post('/upload/csv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setCsvStatus(
+        `CSV synced: ${data?.counts?.volunteers || 0} volunteers, ${data?.counts?.events || 0} events, ${data?.counts?.resources || 0} resources.`
+      );
+      setRefreshTick((prev) => prev + 1);
+      setCsvFile(null);
+    } catch (err) {
+      setCsvStatus(err.response?.data?.message || 'CSV upload failed.');
+    } finally {
+      setCsvUploading(false);
+    }
+  };
 
   const pieColors = [
     'var(--primary)',
@@ -77,6 +109,32 @@ const AnalyticsPage = () => {
         subtitle="Volunteer growth trends, resource distribution, and event performance analytics"
       />
       {error ? <p className="mb-3 text-sm text-rose-300">{error}</p> : null}
+
+      <StaggerSection className="glass rounded-xl p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <FileSpreadsheet className="h-4 w-4 text-emerald-300" />
+          <h3 className="font-['Outfit'] text-base font-semibold">CSV Sync</h3>
+        </div>
+        <p className="mb-3 text-xs text-[var(--text-secondary)]">Upload CSV and refresh analytics charts from this page.</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+            className="rounded-lg border border-[var(--border-muted)] bg-[var(--card-elevated)] px-2 py-1.5 text-xs text-[var(--text-secondary)]"
+          />
+          <button
+            type="button"
+            onClick={uploadCsvAndRefresh}
+            disabled={!csvFile || csvUploading}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 disabled:opacity-50"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            {csvUploading ? 'Uploading...' : 'Upload CSV'}
+          </button>
+        </div>
+        {csvStatus ? <p className="mt-2 text-xs text-[var(--text-secondary)]">{csvStatus}</p> : null}
+      </StaggerSection>
 
       <StaggerSection className="grid gap-4 xl:grid-cols-2">
         <StaggerItem className="glass rounded-xl p-4">

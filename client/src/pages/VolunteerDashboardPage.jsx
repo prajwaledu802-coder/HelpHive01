@@ -36,6 +36,7 @@ import {
 import Papa from 'papaparse';
 import MapContainer from '../components/MapContainer';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../hooks/useSocket';
 import { api } from '../services/api';
 
 const DEFAULT_EVENTS = [
@@ -211,6 +212,8 @@ const VolunteerDashboardPage = () => {
   const [activityData, setActivityData] = useState([]);
   const [mapPoints, setMapPoints] = useState([]);
   const [onDuty, setOnDuty] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const { liveEvents } = useSocket();
 
   useEffect(() => {
     Promise.all([
@@ -345,7 +348,26 @@ const VolunteerDashboardPage = () => {
         setNotifications([]);
         setLeaderboard([]);
       });
-  }, []);
+  }, [refreshTick]);
+
+  useEffect(() => {
+    if (!liveEvents.length) return;
+
+    const incoming = liveEvents[0];
+    if (
+      [
+        'csv:uploaded',
+        'message:new',
+        'message:deleted',
+        'notification:new',
+        'event:new',
+        'event:updated',
+        'resource:updated',
+      ].includes(incoming.eventName)
+    ) {
+      setRefreshTick((prev) => prev + 1);
+    }
+  }, [liveEvents]);
 
   const updateDutyStatus = (nextValue) => {
     if (!user?.id && !user?._id) return;

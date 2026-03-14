@@ -23,6 +23,7 @@ const SOCKET_EVENTS = [
   'task:status-updated',
   'disaster:alert',
   'message:new',
+  'message:deleted',
   'notification:new',
   'csv:uploaded',
 ];
@@ -65,6 +66,8 @@ const formatEventMessage = (eventName, payload) => {
       return `Disaster alert: ${payload?.type || 'incident'} at ${payload?.location || 'unknown location'}`;
     case 'message:new':
       return `New admin message: ${payload?.title || 'Message'}`;
+    case 'message:deleted':
+      return `Message removed: ${payload?.id || 'unknown id'}`;
     case 'notification:new':
       return payload?.message || 'New notification available';
     case 'csv:uploaded':

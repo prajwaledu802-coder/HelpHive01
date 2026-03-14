@@ -21,7 +21,7 @@ export const recommendVolunteers = async (_req, res) => {
 export const chatbot = async (req, res) => {
   const message = req.body?.message || 'Give NGO coordination advice.';
   const reply = await buildAiInsight(message);
-  return res.json({ reply });
+  return res.json({ reply, answer: reply });
 };
 
 export const volunteerInsights = async (_req, res) => {
