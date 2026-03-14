@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import Papa from 'papaparse';
 import {
   Bar,
   BarChart,
@@ -23,6 +24,7 @@ import {
   YAxis,
 } from 'recharts';
 import PageHeader from '../components/ui/PageHeader';
+import { api } from '../services/api';
 
 const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#f97316'];
 
@@ -33,19 +35,25 @@ const CSVUploadPage = () => {
   const [parsing, setParsing] = useState(false);
   const [imported, setImported] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadStats, setUploadStats] = useState(null);
+  const [error, setError] = useState('');
 
   const parseCSV = useCallback((text) => {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return;
-    const heads = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
-    const rows = lines.slice(1).map((line) => {
-      const vals = line.split(',').map((v) => v.trim().replace(/"/g, ''));
-      const row = {};
-      heads.forEach((h, i) => { row[h] = vals[i] || ''; });
-      return row;
+    const parsed = Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
     });
+
+    if (parsed.errors?.length) {
+      setError(parsed.errors[0].message || 'CSV parsing failed');
+      return;
+    }
+
+    const rows = Array.isArray(parsed.data) ? parsed.data : [];
+    const heads = parsed.meta?.fields || Object.keys(rows[0] || {});
     setHeaders(heads);
     setData(rows);
+    setError('');
   }, []);
 
   const handleFile = useCallback((f) => {
@@ -68,7 +76,26 @@ const CSVUploadPage = () => {
   }, [handleFile]);
 
   const handleImport = () => {
-    setImported(true);
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    api
+      .post('/upload/csv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      .then((res) => {
+        setImported(true);
+        setUploadStats(res.data || null);
+        setError('');
+      })
+      .catch((err) => {
+        setImported(false);
+        setError(err.response?.data?.message || 'Unable to upload CSV.');
+      });
   };
 
   const handleClear = () => {
@@ -76,6 +103,8 @@ const CSVUploadPage = () => {
     setData([]);
     setHeaders([]);
     setImported(false);
+    setUploadStats(null);
+    setError('');
   };
 
   // Analytics from parsed data
@@ -111,6 +140,7 @@ const CSVUploadPage = () => {
   return (
     <section className="space-y-5 pb-10">
       <PageHeader title="CSV Upload" subtitle="Import volunteer data, resources, and event records from CSV files" />
+      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
       {/* Upload Zone */}
       {!file && (
@@ -252,20 +282,20 @@ const CSVUploadPage = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-emerald-500/10 border border-emerald-400/20 p-3 text-center">
-                  <p className="text-2xl font-bold text-emerald-400">{analytics.total}</p>
+                  <p className="text-2xl font-bold text-emerald-400">{uploadStats?.counts?.totalRows ?? analytics.total}</p>
                   <p className="text-xs text-[var(--text-secondary)]">Total Records</p>
                 </div>
                 <div className="rounded-xl bg-blue-500/10 border border-blue-400/20 p-3 text-center">
-                  <p className="text-2xl font-bold text-blue-400">{headers.length}</p>
+                  <p className="text-2xl font-bold text-blue-400">{uploadStats?.counts?.volunteers ?? headers.length}</p>
                   <p className="text-xs text-[var(--text-secondary)]">Data Fields</p>
                 </div>
                 <div className="rounded-xl bg-amber-500/10 border border-amber-400/20 p-3 text-center">
-                  <p className="text-2xl font-bold text-amber-400">{analytics.chartData.length}</p>
-                  <p className="text-xs text-[var(--text-secondary)]">Categories</p>
+                  <p className="text-2xl font-bold text-amber-400">{uploadStats?.counts?.events ?? analytics.chartData.length}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Events</p>
                 </div>
                 <div className="rounded-xl bg-purple-500/10 border border-purple-400/20 p-3 text-center">
-                  <p className="text-2xl font-bold text-purple-400">{analytics.numCol ? '✓' : '—'}</p>
-                  <p className="text-xs text-[var(--text-secondary)]">Numeric Data</p>
+                  <p className="text-2xl font-bold text-purple-400">{uploadStats?.counts?.resources ?? 0}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Resources</p>
                 </div>
               </div>
             </div>

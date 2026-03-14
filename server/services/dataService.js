@@ -133,6 +133,37 @@ export const deleteRow = async (table, id) => {
   withError(error);
 };
 
+export const clearRows = async (table) => {
+  const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (error && isSchemaMismatchError(error)) {
+    fallbackStore.set(table, []);
+    return;
+  }
+  withError(error);
+};
+
+export const insertRows = async (table, payloads = []) => {
+  if (!Array.isArray(payloads) || !payloads.length) return [];
+
+  const { data, error } = await supabase.from(table).insert(payloads).select('*');
+  if (error && isSchemaMismatchError(error)) {
+    const rows = getFallbackRows(table);
+    const created = payloads.map((payload) => {
+      const row = {
+        id: payload.id || randomUUID(),
+        created_at: new Date().toISOString(),
+        ...payload,
+      };
+      rows.push(row);
+      return row;
+    });
+    return created.map(normalizeId);
+  }
+
+  withError(error);
+  return (data || []).map(normalizeId);
+};
+
 export const upsertVolunteerProfile = async (user) => {
   const existing = await getById(TABLES.volunteers, user.id);
 

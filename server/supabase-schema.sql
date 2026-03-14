@@ -27,6 +27,7 @@ create table if not exists public.volunteers (
   impactScore int default 0,
   location text,
   coordinates jsonb,
+  onDuty boolean default false,
   available boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -115,6 +116,49 @@ create table if not exists public.tasks (
   updated_at timestamptz default now()
 );
 
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  senderId uuid,
+  senderRole text,
+  senderName text,
+  title text,
+  body text,
+  priority text default 'normal',
+  recipientScope text default 'all',
+  recipientUserId uuid,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.leaderboard (
+  id uuid primary key default gen_random_uuid(),
+  volunteerId uuid,
+  rank int,
+  score int default 0,
+  hoursWorked int default 0,
+  eventsJoined int default 0,
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.activity_logs (
+  id uuid primary key default gen_random_uuid(),
+  action text,
+  actorId uuid,
+  details text,
+  metadata jsonb,
+  timestamp timestamptz default now(),
+  created_at timestamptz default now()
+);
+
+create table if not exists public.analytics (
+  id uuid primary key default gen_random_uuid(),
+  source text,
+  uploadedBy uuid,
+  uploadedAt timestamptz default now(),
+  metrics jsonb,
+  counts jsonb,
+  created_at timestamptz default now()
+);
+
 alter table public.users enable row level security;
 alter table public.volunteers enable row level security;
 alter table public.events enable row level security;
@@ -124,6 +168,10 @@ alter table public.help_requests enable row level security;
 alter table public.notifications enable row level security;
 alter table public.disasters enable row level security;
 alter table public.tasks enable row level security;
+alter table public.messages enable row level security;
+alter table public.leaderboard enable row level security;
+alter table public.activity_logs enable row level security;
+alter table public.analytics enable row level security;
 
 create policy if not exists users_service_all on public.users for all using (true) with check (true);
 create policy if not exists volunteers_service_all on public.volunteers for all using (true) with check (true);
@@ -134,3 +182,7 @@ create policy if not exists help_requests_service_all on public.help_requests fo
 create policy if not exists notifications_service_all on public.notifications for all using (true) with check (true);
 create policy if not exists disasters_service_all on public.disasters for all using (true) with check (true);
 create policy if not exists tasks_service_all on public.tasks for all using (true) with check (true);
+create policy if not exists messages_service_all on public.messages for all using (true) with check (true);
+create policy if not exists leaderboard_service_all on public.leaderboard for all using (true) with check (true);
+create policy if not exists activity_logs_service_all on public.activity_logs for all using (true) with check (true);
+create policy if not exists analytics_service_all on public.analytics for all using (true) with check (true);

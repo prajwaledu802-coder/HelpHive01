@@ -1,5 +1,6 @@
 import { TABLES } from '../models/tableNames.js';
 import { deleteRow, getById, insertRow, listRows, updateRow } from '../services/dataService.js';
+import { emitRealtime } from '../services/realtimeService.js';
 
 export const getVolunteers = async (req, res) => {
   const volunteers = await listRows(TABLES.volunteers);
@@ -61,4 +62,28 @@ export const approveVolunteer = async (req, res) => {
 export const deleteVolunteer = async (req, res) => {
   await deleteRow(TABLES.volunteers, req.params.id);
   return res.status(204).send();
+};
+
+export const updateDutyStatus = async (req, res) => {
+  const volunteerId = req.params.id || req.user?.id;
+  const volunteer = await getById(TABLES.volunteers, volunteerId);
+  if (!volunteer) {
+    return res.status(404).json({ message: 'Volunteer not found' });
+  }
+
+  const onDuty = Boolean(req.body?.onDuty);
+  const updated = await updateRow(TABLES.volunteers, volunteerId, {
+    onDuty,
+    available: onDuty,
+    coordinates: req.body?.coordinates || volunteer.coordinates || null,
+    location: req.body?.location || volunteer.location || null,
+  });
+
+  emitRealtime('volunteer:duty-updated', {
+    volunteerId,
+    status: onDuty ? 'ON DUTY' : 'OFF DUTY',
+    coordinates: updated.coordinates,
+  });
+
+  return res.json(updated);
 };

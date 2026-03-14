@@ -38,19 +38,19 @@ const Topbar = ({ onOpenMobileSidebar, collapsed }) => {
 
         <div className="ml-auto flex items-center gap-2">
           <motion.button
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -2, boxShadow: '0 0 0 1px var(--active-outline), 0 0 22px var(--active-glow)' }}
             type="button"
             onClick={toggleTheme}
-            className="rounded-lg border border-[var(--border-muted)] bg-[var(--card-elevated)] p-2 text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+            className="rounded-lg border border-[var(--border-muted)] bg-[var(--card-elevated)] p-2 text-[var(--text-secondary)] transition-all duration-300 hover:text-[var(--text-primary)]"
             aria-label="Toggle theme"
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </motion.button>
 
           <motion.button
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -2, boxShadow: '0 0 0 1px var(--active-outline), 0 0 22px var(--active-glow)' }}
             type="button"
-            className="rounded-lg border border-[var(--border-muted)] bg-[var(--card-elevated)] p-2 text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+            className="rounded-lg border border-[var(--border-muted)] bg-[var(--card-elevated)] p-2 text-[var(--text-secondary)] transition-all duration-300 hover:text-[var(--text-primary)]"
             aria-label="Alerts"
           >
             <Bell className="h-4 w-4" />

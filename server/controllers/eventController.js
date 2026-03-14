@@ -1,5 +1,6 @@
 import { TABLES } from '../models/tableNames.js';
 import { deleteRow, getById, insertRow, listRows, updateRow } from '../services/dataService.js';
+import { emitRealtime } from '../services/realtimeService.js';
 
 export const getEvents = async (req, res) => {
   const events = await listRows(TABLES.events);
@@ -18,11 +19,24 @@ export const createEvent = async (req, res) => {
     assignedVolunteers: req.body.assignedVolunteers || [],
     status: req.body.status || 'planned',
   });
+
+  await insertRow(TABLES.activityLogs, {
+    action: 'Admin created event',
+    actorId: req.user?.id || null,
+    details: `Created ${event.title || event.name || 'event'}`,
+    metadata: {
+      eventId: event.id,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
+  emitRealtime('event:new', event);
   return res.status(201).json(event);
 };
 
 export const deleteEvent = async (req, res) => {
   await deleteRow(TABLES.events, req.params.id);
+  emitRealtime('event:deleted', { id: req.params.id });
   return res.status(204).send();
 };
 
@@ -40,6 +54,22 @@ export const joinEvent = async (req, res) => {
 
   const updated = await updateRow(TABLES.events, event.id, {
     assignedVolunteers: Array.from(assigned),
+  });
+
+  await insertRow(TABLES.activityLogs, {
+    action: 'Volunteer joined event',
+    actorId: volunteerId || null,
+    details: `Joined ${event.title || event.name || 'event'}`,
+    metadata: {
+      eventId: event.id,
+      volunteerId,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
+  emitRealtime('event:volunteer-joined', {
+    eventId: event.id,
+    volunteerId,
   });
 
   return res.json(updated);

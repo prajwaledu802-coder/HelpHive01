@@ -100,12 +100,9 @@ export default function Preloader() {
                 {/* Ashoka Chakra — Navy blue on white background */}
                 <motion.g
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1, rotate: 360 }}
-                  transition={{
-                    opacity: { duration: 0.5, delay: 1.3 },
-                    rotate: { duration: 20, repeat: Infinity, ease: 'linear' },
-                  }}
-                  style={{ originX: '50px', originY: '50px' }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 1.3, ease: 'easeInOut' }}
+                  style={{ transformOrigin: '50px 50px' }}
                 >
                   <circle cx="50" cy="50" r="14" stroke="#000080" strokeWidth="1.5" fill="none" />
                   <circle cx="50" cy="50" r="11" stroke="#000080" strokeWidth="0.4" fill="none" />

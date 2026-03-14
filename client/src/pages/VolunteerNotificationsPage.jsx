@@ -9,8 +9,9 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PageHeader from '../components/ui/PageHeader';
+import { api } from '../services/api';
 
 const NOTIF_TYPES = {
   event: { icon: Calendar, color: 'from-blue-500 to-indigo-600', badge: 'bg-blue-500/15 text-blue-400' },
@@ -19,19 +20,40 @@ const NOTIF_TYPES = {
   leaderboard: { icon: Award, color: 'from-amber-500 to-orange-600', badge: 'bg-amber-500/15 text-amber-400' },
 };
 
-const MOCK_NOTIFICATIONS = [
-  { id: 1, type: 'emergency', title: 'Emergency: Flood Alert — Assam', body: 'You are being deployed to Guwahati region. Please confirm availability within 1 hour.', time: '5 min ago', read: false },
-  { id: 2, type: 'event', title: 'New event assigned: Chennai Food Drive 2026', body: 'You have been assigned as Logistics Coordinator. Event starts March 20.', time: '30 min ago', read: false },
-  { id: 3, type: 'leaderboard', title: 'Leaderboard update: You moved to #3!', body: 'Your impact score increased to 82. Keep up the great work!', time: '2 hours ago', read: false },
-  { id: 4, type: 'admin', title: 'Message from Admin', body: 'Please update your availability for the upcoming week. We have several events planned.', time: '4 hours ago', read: true },
-  { id: 5, type: 'event', title: 'Event reminder: Bangalore Tech for Good', body: 'The workshop starts on March 25. Please confirm your attendance.', time: '6 hours ago', read: true },
-  { id: 6, type: 'admin', title: 'Training module available', body: 'New first aid training course has been added. Complete by March 20.', time: '1 day ago', read: true },
-  { id: 7, type: 'leaderboard', title: 'Badge earned: First Responder', body: 'You completed your first emergency deployment. Badge added to profile.', time: '2 days ago', read: true },
-];
-
 const VolunteerNotificationsPage = () => {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    Promise.all([api.get('/notifications'), api.get('/messages')])
+      .then(([notifRes, msgRes]) => {
+        const notifRows = Array.isArray(notifRes.data) ? notifRes.data : [];
+        const msgRows = Array.isArray(msgRes.data) ? msgRes.data : [];
+
+        const mappedNotifications = notifRows.map((row) => ({
+          id: row.id,
+          type: row.type || 'admin',
+          title: row.title || 'Notification',
+          body: row.message || '',
+          time: new Date(row.created_at || Date.now()).toLocaleString(),
+          read: Boolean(row.read),
+        }));
+
+        const mappedMessages = msgRows.map((row) => ({
+          id: `msg-${row.id}`,
+          type: row.priority === 'emergency' ? 'emergency' : 'admin',
+          title: row.title,
+          body: row.body,
+          time: new Date(row.created_at || Date.now()).toLocaleString(),
+          read: false,
+        }));
+
+        setNotifications([...mappedMessages, ...mappedNotifications]);
+      })
+      .catch(() => {
+        setNotifications([]);
+      });
+  }, []);
 
   const filtered = filter === 'all' ? notifications : notifications.filter((n) => n.type === filter);
   const unreadCount = notifications.filter((n) => !n.read).length;

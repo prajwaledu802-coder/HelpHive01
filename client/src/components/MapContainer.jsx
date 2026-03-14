@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { MapContainer as LeafletMap, Marker, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer as LeafletMap, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 
 const defaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -21,9 +21,20 @@ const createDotIcon = (color) =>
     iconAnchor: [8, 8],
   });
 
-const MapContainer = ({ points = [], onMarkerSelect, heightClass = 'h-[460px]' }) => (
+const ClickCapture = ({ onMapClick }) => {
+  useMapEvents({
+    click: (event) => {
+      onMapClick?.({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+  });
+
+  return null;
+};
+
+const MapContainer = ({ points = [], onMarkerSelect, onMapClick, heightClass = 'h-[460px]' }) => (
   <div className={`${heightClass} overflow-hidden rounded-xl border border-[var(--border-muted)]`}>
     <LeafletMap center={[22.9, 79.2]} zoom={5} className="h-full w-full" scrollWheelZoom>
+      <ClickCapture onMapClick={onMapClick} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -31,13 +42,15 @@ const MapContainer = ({ points = [], onMarkerSelect, heightClass = 'h-[460px]' }
 
       {points.map((point) => {
         const markerColor =
-          point.type === 'event'
-            ? 'var(--primary)'
-            : point.type === 'resource'
-              ? 'var(--secondary)'
-              : point.type === 'help'
-                ? 'var(--text)'
-                : 'var(--primary)';
+          point.type === 'volunteer'
+            ? '#3b82f6'
+            : point.type === 'event'
+              ? '#f97316'
+              : point.type === 'disaster' || point.type === 'help'
+                ? '#ef4444'
+                : point.type === 'resource'
+                  ? '#22c55e'
+                  : '#3b82f6';
 
         return (
           <Marker

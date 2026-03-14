@@ -5,6 +5,7 @@ import {
   deleteVolunteer,
   getVolunteerById,
   getVolunteers,
+  updateDutyStatus,
   updateVolunteer,
 } from '../controllers/volunteerController.js';
 import { createVolunteerRegistration } from '../controllers/volunteerExperienceController.js';
@@ -17,5 +18,6 @@ volunteerRouter.post('/', protect, createVolunteer);
 volunteerRouter.post('/register', createVolunteerRegistration);
 volunteerRouter.get('/:id', protect, getVolunteerById);
 volunteerRouter.put('/:id', protect, updateVolunteer);
+volunteerRouter.put('/:id/duty', protect, updateDutyStatus);
 volunteerRouter.put('/:id/approve', protect, approveVolunteer);
 volunteerRouter.delete('/:id', protect, deleteVolunteer);

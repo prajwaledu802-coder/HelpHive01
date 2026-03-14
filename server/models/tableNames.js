@@ -4,8 +4,12 @@ export const TABLES = {
   events: 'events',
   resources: 'resources',
   volunteerActivity: 'volunteer_activity',
+  activityLogs: 'activity_logs',
   helpRequests: 'help_requests',
   notifications: 'notifications',
   disasters: 'disasters',
   tasks: 'tasks',
+  messages: 'messages',
+  leaderboard: 'leaderboard',
+  analytics: 'analytics',
 };

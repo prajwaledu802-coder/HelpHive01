@@ -65,7 +65,7 @@ const DashboardPage = () => {
       api.get('/activity'),
       api.get('/help-requests?status=open'),
       api.post('/ai/recommend-volunteers', {}),
-      api.get('/disaster'),
+      api.get('/disasters'),
       api.get('/volunteers'),
       api.get('/events'),
       api.get('/resources'),
@@ -169,7 +169,7 @@ const DashboardPage = () => {
             label: `Disaster | ${alert.location || 'Unknown'}`,
             lat: alert.coordinates?.lat,
             lng: alert.coordinates?.lng,
-            type: 'help',
+            type: 'disaster',
           })),
         ]
           .filter((point) => point.lat && point.lng)

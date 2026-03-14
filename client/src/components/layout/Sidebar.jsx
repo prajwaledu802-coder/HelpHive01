@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BarChart3,
+  Bell,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -39,15 +40,15 @@ const adminLinks = [
 const volunteerLinks = [
   { to: '/volunteer', label: 'Dashboard', icon: Gauge },
   { to: '/events', label: 'Events', icon: CalendarDays },
-  { to: '/my-events', label: 'My Events', icon: CalendarDays },
-  { to: '/assigned-tasks', label: 'Assigned Tasks', icon: Lightbulb },
   { to: '/map-tracking', label: 'Map Tracking', icon: Compass },
   { to: '/leaderboard', label: 'Leaderboard', icon: Medal },
   { to: '/ai', label: 'AI Insights', icon: Lightbulb },
-  { to: '/volunteer-notifications', label: 'Notifications', icon: MessageSquare },
-  { to: '/chatbot', label: 'Messages', icon: MessageSquare },
+  { to: '/my-events', label: 'My Events', icon: CalendarDays },
+  { to: '/assigned-tasks', label: 'Assigned Tasks', icon: Lightbulb },
+  { to: '/volunteer-activity', label: 'Activity Timeline', icon: History },
+  { to: '/volunteer-notifications', label: 'Notifications', icon: Bell },
+  { to: '/chatbot', label: 'Messages (Chatbot)', icon: MessageSquare },
   { to: '/volunteer-csv', label: 'CSV Upload', icon: FileUp },
-  { to: '/volunteer-activity', label: 'Activity Log', icon: History },
   { to: '/profile', label: 'Profile', icon: CircleUserRound },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

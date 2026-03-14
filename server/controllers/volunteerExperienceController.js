@@ -2,8 +2,21 @@ import { TABLES } from '../models/tableNames.js';
 import { getById, insertRow, listRows, updateRow } from '../services/dataService.js';
 
 export const getActivity = async (_req, res) => {
-  const activity = await listRows(TABLES.volunteerActivity);
-  return res.json(activity);
+  const [activity, logs] = await Promise.all([
+    listRows(TABLES.volunteerActivity),
+    listRows(TABLES.activityLogs),
+  ]);
+
+  const normalizedLogs = logs.map((item) => ({
+    _id: item.id,
+    timestamp: item.timestamp || item.created_at,
+    title: item.action,
+    details: item.details,
+    metadata: item.metadata,
+    type: 'log',
+  }));
+
+  return res.json([...activity, ...normalizedLogs]);
 };
 
 export const getHelpRequests = async (req, res) => {

@@ -9,8 +9,9 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PageHeader from '../components/ui/PageHeader';
+import { api } from '../services/api';
 
 const MESSAGE_TYPES = [
   { value: 'normal', label: 'Normal', color: 'from-emerald-500 to-teal-600', icon: Info, badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-400/25' },
@@ -18,36 +19,53 @@ const MESSAGE_TYPES = [
   { value: 'emergency', label: 'Emergency', color: 'from-rose-500 to-red-600', icon: AlertTriangle, badge: 'bg-rose-500/15 text-rose-400 border-rose-400/25' },
 ];
 
-const MOCK_MESSAGES = [
-  { id: 1, type: 'emergency', title: 'Flood alert — Assam Region', body: 'Immediate deployment of 50+ volunteers required. Medical kits and clean water supply needed urgently.', time: '2 min ago', read: false },
-  { id: 2, type: 'important', title: 'Event update — Delhi Food Drive', body: 'Volunteer count increased to 120. Please reconfirm logistics and transport schedule by tomorrow.', time: '1 hour ago', read: false },
-  { id: 3, type: 'normal', title: 'Weekly report generated', body: 'The weekly volunteer activity report has been generated and is available in the Analytics section.', time: '3 hours ago', read: true },
-  { id: 4, type: 'normal', title: 'New volunteer registration', body: '15 new volunteers registered from Karnataka region. Skills: Medical, Logistics, Communication.', time: '5 hours ago', read: true },
-  { id: 5, type: 'important', title: 'Resource shortage — Tamil Nadu', body: 'Medical kits running low at Chennai distribution center. Restock required within 48 hours.', time: '8 hours ago', read: true },
-  { id: 6, type: 'emergency', title: 'Earthquake response — Gujarat', body: 'Magnitude 5.2 earthquake detected. Emergency response protocol initiated. All available volunteers on standby.', time: '1 day ago', read: true },
-];
-
 const MessagesPage = () => {
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [composeOpen, setComposeOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [form, setForm] = useState({ type: 'normal', title: '', body: '', recipients: 'all' });
+  const [error, setError] = useState('');
+
+  const loadMessages = () => {
+    api
+      .get('/messages')
+      .then((res) => {
+        const rows = Array.isArray(res.data) ? res.data : [];
+        setMessages(
+          rows.map((row) => ({
+            id: row.id,
+            type: row.priority || 'normal',
+            title: row.title,
+            body: row.body,
+            time: new Date(row.created_at || Date.now()).toLocaleString(),
+            read: false,
+          }))
+        );
+      })
+      .catch((err) => setError(err.response?.data?.message || 'Unable to load messages.'));
+  };
+
+  useEffect(() => {
+    loadMessages();
+  }, []);
 
   const filtered = filter === 'all' ? messages : messages.filter((m) => m.type === filter);
 
   const handleSend = () => {
     if (!form.title.trim() || !form.body.trim()) return;
-    const newMsg = {
-      id: Date.now(),
-      type: form.type,
-      title: form.title,
-      body: form.body,
-      time: 'Just now',
-      read: false,
-    };
-    setMessages([newMsg, ...messages]);
-    setForm({ type: 'normal', title: '', body: '', recipients: 'all' });
-    setComposeOpen(false);
+    api
+      .post('/messages', {
+        title: form.title,
+        body: form.body,
+        priority: form.type,
+        sendTo: form.recipients,
+      })
+      .then(() => {
+        setForm({ type: 'normal', title: '', body: '', recipients: 'all' });
+        setComposeOpen(false);
+        loadMessages();
+      })
+      .catch((err) => setError(err.response?.data?.message || 'Unable to send message.'));
   };
 
   const handleDelete = (id) => {
@@ -58,6 +76,7 @@ const MessagesPage = () => {
 
   return (
     <section className="space-y-5 pb-10">
+      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader title="Messages" subtitle="Send notifications and alerts to volunteers" />
         <motion.button

@@ -42,7 +42,7 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 JWT_SECRET=
 GROQ_API_KEY=
-PORT=5000
+PORT=10000
 CLIENT_URL=http://localhost:5173,http://localhost:5174,http://localhost:5175
 ```
 
@@ -56,6 +56,8 @@ Without schema initialization, the API now uses a safe temporary in-memory fallb
 
 ```env
 VITE_API_URL=https://your-render-backend-url/api
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
 VITE_ROUTER_BASENAME=/admin
 ```
 

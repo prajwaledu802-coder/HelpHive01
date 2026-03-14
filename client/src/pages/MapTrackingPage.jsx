@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Compass, MapPin, Package, Users } from 'lucide-react';
+import { AlertTriangle, Compass, MapPin, Package, Users } from 'lucide-react';
 import MapContainer from '../components/MapContainer';
 import PageHeader from '../components/ui/PageHeader';
 import { api } from '../services/api';
@@ -9,28 +9,36 @@ const MapTrackingPage = () => {
   const [events, setEvents] = useState([]);
   const [resources, setResources] = useState([]);
   const [helpRequests, setHelpRequests] = useState([]);
+  const [disasters, setDisasters] = useState([]);
   const [error, setError] = useState('');
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [pinMode, setPinMode] = useState(false);
   const [filters, setFilters] = useState({
     volunteer: true,
     event: true,
     resource: true,
     help: true,
+    disaster: true,
   });
 
-  useEffect(() => {
-    Promise.all([api.get('/volunteers'), api.get('/events'), api.get('/resources'), api.get('/help-requests')])
-      .then(([v, e, r, h]) => {
+  const loadMapData = () => {
+    Promise.all([api.get('/volunteers'), api.get('/events'), api.get('/resources'), api.get('/help-requests'), api.get('/disasters')])
+      .then(([v, e, r, h, d]) => {
         setVolunteers(Array.isArray(v.data) ? v.data : []);
         setEvents(Array.isArray(e.data) ? e.data : []);
         setResources(Array.isArray(r.data) ? r.data : []);
         setHelpRequests(Array.isArray(h.data) ? h.data : []);
+        setDisasters(Array.isArray(d.data) ? d.data : []);
       })
       .catch((err) => setError(err.response?.data?.message || 'Unable to load map data.'));
+  };
+
+  useEffect(() => {
+    loadMapData();
   }, []);
 
   const points = useMemo(() => {
-    const volunteerPoints = volunteers.map((volunteer) => ({
+    const volunteerPoints = volunteers.filter((volunteer) => volunteer.onDuty !== false).map((volunteer) => ({
       name: volunteer.name,
       label: `Volunteer | ${volunteer.location}`,
       lat: volunteer.coordinates?.lat,
@@ -62,10 +70,34 @@ const MapTrackingPage = () => {
       type: 'help',
     }));
 
-    return [...volunteerPoints, ...eventPoints, ...centerPoints, ...helpPoints]
+    const disasterPoints = disasters.map((alert) => ({
+      name: alert.type || 'Disaster',
+      label: `Disaster | ${alert.location || 'Unknown'}`,
+      lat: alert.coordinates?.lat,
+      lng: alert.coordinates?.lng,
+      type: 'disaster',
+    }));
+
+    return [...volunteerPoints, ...eventPoints, ...centerPoints, ...helpPoints, ...disasterPoints]
       .filter((point) => point.lat && point.lng)
       .filter((point) => filters[point.type]);
-  }, [events, filters, volunteers, resources, helpRequests]);
+  }, [events, filters, volunteers, resources, helpRequests, disasters]);
+
+  const dropEmergencyPin = async (coords) => {
+    if (!pinMode) return;
+    try {
+      await api.post('/disasters', {
+        type: 'Emergency Pin',
+        location: `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
+        severity: 'high',
+        coordinates: coords,
+      });
+      setPinMode(false);
+      loadMapData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to drop emergency pin.');
+    }
+  };
 
   const toggleFilter = (key) => {
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -124,11 +156,33 @@ const MapTrackingPage = () => {
         >
           <MapPin className="mr-1 inline h-4 w-4" /> Help requests
         </button>
+        <button
+          type="button"
+          onClick={() => toggleFilter('disaster')}
+          className={`rounded-xl border px-3 py-1.5 text-sm ${
+            filters.disaster
+              ? 'border-rose-400/45 bg-rose-500/10 text-rose-200'
+              : 'border-[var(--border-muted)] text-[var(--text-secondary)]'
+          }`}
+        >
+          <AlertTriangle className="mr-1 inline h-4 w-4" /> Disaster pins
+        </button>
+        <button
+          type="button"
+          onClick={() => setPinMode((prev) => !prev)}
+          className={`rounded-xl border px-3 py-1.5 text-sm ${
+            pinMode
+              ? 'border-rose-400/45 bg-rose-500/10 text-rose-200'
+              : 'border-[var(--border-muted)] text-[var(--text-secondary)]'
+          }`}
+        >
+          <AlertTriangle className="mr-1 inline h-4 w-4" /> {pinMode ? 'Click map to save pin' : 'Drop emergency pin'}
+        </button>
       </div>
 
       <div className="mb-4 grid gap-4 xl:grid-cols-4">
         <div className="xl:col-span-3">
-          <MapContainer points={points} onMarkerSelect={setSelectedPoint} />
+          <MapContainer points={points} onMarkerSelect={setSelectedPoint} onMapClick={dropEmergencyPin} />
         </div>
         <aside className="glass rounded-xl p-4">
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Nearby Operations</p>
@@ -137,6 +191,7 @@ const MapTrackingPage = () => {
             <p>Available resources: {resources.length}</p>
             <p>Active events: {events.length}</p>
             <p>Open help requests: {helpRequests.length}</p>
+            <p>Disaster alerts: {disasters.length}</p>
           </div>
 
           <div className="mt-4 rounded-xl border border-[var(--border-muted)] bg-[var(--card-elevated)] p-3 text-sm">

@@ -22,6 +22,9 @@ const SOCKET_EVENTS = [
   'task:assigned',
   'task:status-updated',
   'disaster:alert',
+  'message:new',
+  'notification:new',
+  'csv:uploaded',
 ];
 
 const formatEventMessage = (eventName, payload) => {
@@ -60,6 +63,12 @@ const formatEventMessage = (eventName, payload) => {
       return `Task status updated to ${payload?.status || 'updated'}`;
     case 'disaster:alert':
       return `Disaster alert: ${payload?.type || 'incident'} at ${payload?.location || 'unknown location'}`;
+    case 'message:new':
+      return `New admin message: ${payload?.title || 'Message'}`;
+    case 'notification:new':
+      return payload?.message || 'New notification available';
+    case 'csv:uploaded':
+      return `CSV uploaded: ${payload?.counts?.volunteers || 0} volunteers, ${payload?.counts?.events || 0} events synced`;
     case 'system:welcome':
       return payload?.message || 'Connected to HelpHive realtime channel';
     default:
@@ -71,7 +80,7 @@ const getSocketUrl = () => {
   const explicit = import.meta.env.VITE_SOCKET_URL;
   if (explicit) return explicit;
 
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
   return apiBase.replace(/\/api\/?$/, '');
 };
 
