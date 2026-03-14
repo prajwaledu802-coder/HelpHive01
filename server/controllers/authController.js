@@ -8,6 +8,60 @@ import { getById, insertRow, listRows, upsertVolunteerProfile } from '../service
 const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const verifyWithTokenInfo = async (idToken) => {
+  const response = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+  );
+
+  if (!response.ok) {
+    throw new Error('Google tokeninfo verification failed');
+  }
+
+  const payload = await response.json();
+  const issuer = String(payload.iss || '').toLowerCase();
+  if (!issuer.includes('accounts.google.com')) {
+    throw new Error('Invalid Google token issuer');
+  }
+
+  if (process.env.GOOGLE_CLIENT_ID) {
+    const allowedAudiences = String(process.env.GOOGLE_CLIENT_ID)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (allowedAudiences.length && !allowedAudiences.includes(String(payload.aud || '').trim())) {
+      throw new Error('Google token audience mismatch');
+    }
+  }
+
+  return {
+    email: String(payload.email || '').toLowerCase(),
+    name: payload.name || payload.given_name || 'Google User',
+    sub: payload.sub,
+  };
+};
+
+const verifyGoogleCredential = async (idToken) => {
+  if (process.env.GOOGLE_CLIENT_ID) {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: String(process.env.GOOGLE_CLIENT_ID)
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    });
+
+    const payload = ticket.getPayload();
+    return {
+      email: String(payload?.email || '').toLowerCase(),
+      name: payload?.name || 'Google User',
+      sub: payload?.sub,
+    };
+  }
+
+  // Fallback path for environments where GOOGLE_CLIENT_ID was not set yet.
+  return verifyWithTokenInfo(idToken);
+};
+
 const getField = (row, ...keys) => {
   for (const key of keys) {
     if (row?.[key] !== undefined && row?.[key] !== null) return row[key];
@@ -104,16 +158,7 @@ export const googleAuth = async (req, res) => {
     return res.status(400).json({ message: 'Google credential is required' });
   }
 
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    return res.status(500).json({ message: 'GOOGLE_CLIENT_ID is not configured on server' });
-  }
-
-  const ticket = await googleClient.verifyIdToken({
-    idToken: credential,
-    audience: process.env.GOOGLE_CLIENT_ID,
-  });
-
-  const payload = ticket.getPayload();
+  const payload = await verifyGoogleCredential(credential);
   const email = String(payload?.email || '').toLowerCase();
   const fullName = payload?.name || 'Google User';
 
