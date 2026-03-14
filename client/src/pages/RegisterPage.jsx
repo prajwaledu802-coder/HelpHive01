@@ -18,7 +18,7 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { register } = useAuth();
+  const { register, loginAsRole } = useAuth();
 
   useEffect(() => {
     const roleFromQuery = searchParams.get('role');
@@ -48,6 +48,16 @@ const RegisterPage = () => {
       navigate('/role-selection');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
+    }
+  };
+
+  const handleQuickRole = async (nextRole) => {
+    setError('');
+    try {
+      await loginAsRole(nextRole);
+      navigate('/role-selection');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Quick login failed');
     }
   };
 
@@ -107,6 +117,23 @@ const RegisterPage = () => {
         <AnimatedButton type="submit" className="mt-5 w-full">
           Register
         </AnimatedButton>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <AnimatedButton
+            type="button"
+            onClick={() => handleQuickRole('admin')}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            Quick Admin
+          </AnimatedButton>
+          <AnimatedButton
+            type="button"
+            onClick={() => handleQuickRole('volunteer')}
+            className="w-full bg-emerald-600 hover:bg-emerald-700"
+          >
+            Quick Volunteer
+          </AnimatedButton>
+        </div>
 
         <p className="mt-4 text-center text-sm text-[var(--text-secondary)]">
           Already have an account? <Link to={`/login?role=${role}`} className="font-semibold text-[var(--accent-primary)]">Login</Link>

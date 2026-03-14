@@ -43,20 +43,23 @@ const sanitizeUser = (user) => {
 
 export const register = async (req, res) => {
   const { fullName, email, password, role = 'volunteer', phone, location, skills = [] } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedPassword = String(password || '');
+  const normalizedName = String(fullName || '').trim();
 
-  if (!fullName || !email || !password) {
+  if (!normalizedName || !normalizedEmail || !normalizedPassword) {
     return res.status(400).json({ message: 'fullName, email and password are required' });
   }
 
-  const users = await listRows(TABLES.users, { filters: { email: String(email).toLowerCase() } });
+  const users = await listRows(TABLES.users, { filters: { email: normalizedEmail } });
   if (users.length) {
     return res.status(409).json({ message: 'User already exists' });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(normalizedPassword, 10);
   const user = await insertRow(TABLES.users, {
-    fullname: fullName,
-    email: String(email).toLowerCase(),
+    fullname: normalizedName,
+    email: normalizedEmail,
     passwordhash: passwordHash,
     role,
     phone,
@@ -80,11 +83,13 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedPassword = String(password || '');
 
-  const users = await listRows(TABLES.users, { filters: { email: String(email || '').toLowerCase() } });
+  const users = await listRows(TABLES.users, { filters: { email: normalizedEmail } });
   const user = users[0] ? normalizeUser(users[0]) : null;
 
-  if (!user || !(await bcrypt.compare(password || '', user.passwordHash || ''))) {
+  if (!user || !(await bcrypt.compare(normalizedPassword, user.passwordHash || ''))) {
     return res.status(401).json({ message: 'Invalid email or password' });
   }
 
