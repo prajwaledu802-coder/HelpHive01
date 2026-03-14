@@ -79,12 +79,30 @@ const formatEventMessage = (eventName, payload) => {
   }
 };
 
-const getSocketUrl = () => {
-  const explicit = import.meta.env.VITE_SOCKET_URL;
-  if (explicit) return explicit;
+const isPlaceholderUrl = (value) => {
+  const text = String(value || '').toLowerCase();
+  return (
+    !text ||
+    text.includes('your-backend-name.onrender.com') ||
+    text.includes('your-project') ||
+    text.includes('example.com')
+  );
+};
 
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
-  return apiBase.replace(/\/api\/?$/, '');
+const cleanApiToOrigin = (url) => String(url || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+
+const getSocketUrl = () => {
+  const explicit = String(import.meta.env.VITE_SOCKET_URL || '').trim();
+  if (explicit && !isPlaceholderUrl(explicit)) {
+    return cleanApiToOrigin(explicit);
+  }
+
+  const apiBase = String(import.meta.env.VITE_API_URL || '').trim();
+  if (apiBase && !isPlaceholderUrl(apiBase)) {
+    return cleanApiToOrigin(apiBase);
+  }
+
+  return 'http://localhost:10000';
 };
 
 export const SocketProvider = ({ children }) => {
