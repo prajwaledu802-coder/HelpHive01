@@ -1,5 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X, ChevronRight } from 'lucide-react';
 import gsap from 'gsap';
+import { useLanguage } from '../../contexts/LanguageProvider';
 import '../../pages/SliderLanding.css';
 
 const sliderData = [
@@ -47,7 +50,29 @@ const sliderData = [
     }
 ];
 
+/* ── Typewriter helper ─────────────────────────────── */
+const typewriterEffect = (element, text, duration = 0.8) => {
+    if (!element) return;
+    element.innerText = '';
+    const chars = text.split('');
+    chars.forEach((char, i) => {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.style.opacity = '0';
+        span.style.display = 'inline-block';
+        span.style.transform = 'translateY(8px)';
+        element.appendChild(span);
+        gsap.to(span, {
+            opacity: 1, y: 0,
+            duration: 0.04,
+            delay: (duration / chars.length) * i,
+            ease: 'power2.out',
+        });
+    });
+};
+
 export default function HeroSlider() {
+    const { t } = useLanguage();
     const appRef = useRef(null);
     const backgroundsContainerRef = useRef(null);
     const cardStackRef = useRef(null);
@@ -101,7 +126,7 @@ export default function HeroSlider() {
         ]
     };
 
-    const showRelatedInfo = () => {
+    const showRelatedInfo = useCallback(() => {
         const activeSlide = sliderData[currentIndexRef.current];
         setRelatedInfo({
             heading: `${activeSlide.title1} ${activeSlide.title2}`,
@@ -112,11 +137,11 @@ export default function HeroSlider() {
                 'Role-based workflows for admin and volunteers.'
             ]
         });
+    }, []);
 
-        requestAnimationFrame(() => {
-            relatedInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    };
+    const closeRelatedInfo = useCallback(() => {
+        setRelatedInfo(null);
+    }, []);
 
     const startAutoPlay = () => {
         if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
@@ -155,8 +180,9 @@ export default function HeroSlider() {
             y: -40, opacity: 0, duration: 0.4, stagger: 0.05, ease: "power2.in",
             onComplete: () => {
                 if (locationTextRef.current) locationTextRef.current.innerText = item.location;
-                if (titleLine1Ref.current) titleLine1Ref.current.innerText = item.title1;
-                if (titleLine2Ref.current) titleLine2Ref.current.innerText = item.title2;
+                // Typewriter effect on title lines
+                typewriterEffect(titleLine1Ref.current, item.title1, 0.6);
+                typewriterEffect(titleLine2Ref.current, item.title2, 0.6);
                 if (descRef.current) descRef.current.innerText = item.desc;
                 gsap.set(validTargets, { y: 40 });
             }
@@ -307,7 +333,12 @@ export default function HeroSlider() {
 
             // Initial Play Animation
             const tl = gsap.timeline({
-                onComplete: startAutoPlay
+                onComplete: () => {
+                    // Typewriter on initial titles after reveal
+                    typewriterEffect(titleLine1Ref.current, sliderData[0].title1, 0.7);
+                    typewriterEffect(titleLine2Ref.current, sliderData[0].title2, 0.7);
+                    startAutoPlay();
+                }
             });
 
             gsap.set('.hero-content > div', { y: 50, opacity: 0 });
@@ -369,10 +400,10 @@ export default function HeroSlider() {
                     </div>
 
                     <div className="actions-wrapper">
-                        <button className="slider-btn btn-icon cursor-pointer">
+                        <button className="slider-btn btn-icon cursor-pointer" style={{ transition: 'transform 0.2s ease, box-shadow 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(75,184,138,0.4)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                         </button>
-                        <button className="slider-btn btn-outline cursor-pointer" onClick={showRelatedInfo}>Learn More</button>
+                        <button className="slider-btn btn-outline cursor-pointer" onClick={showRelatedInfo} style={{ transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05) translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(75,184,138,0.3)'; e.currentTarget.style.background = 'rgba(75,184,138,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'transparent'; }}>{t('hero.learnMore')}</button>
                     </div>
 
                     <div className="pagination-controls">
@@ -391,20 +422,7 @@ export default function HeroSlider() {
                         </div>
                     </div>
 
-                    {relatedInfo && (
-                        <div ref={relatedInfoRef} className="mt-6 rounded-xl border border-white/20 bg-black/35 p-4 backdrop-blur-sm md:p-5">
-                            <h3 className="mb-2 text-lg font-semibold text-white md:text-xl">{relatedInfo.heading}</h3>
-                            <p className="mb-3 text-sm text-white/90 md:text-base">{relatedInfo.summary}</p>
-                            <ul className="space-y-2 text-sm text-white/85 md:text-base">
-                                {relatedInfo.points.map((point, idx) => (
-                                    <li key={`info-${idx}`} className="flex items-start gap-2">
-                                        <span className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-300" />
-                                        <span>{point}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* Card stack — rendered once with static indices, GSAP manages DOM after */}
@@ -422,6 +440,76 @@ export default function HeroSlider() {
                     </div>
                 </div>
             </main>
+
+            {/* ── Learn More Modal Overlay ── */}
+            <AnimatePresence>
+                {relatedInfo && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+                        onClick={closeRelatedInfo}
+                    >
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+
+                        {/* Modal Content */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 30, scale: 0.97 }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative z-10 w-full max-w-xl rounded-2xl border border-white/15 bg-white/10 p-6 md:p-8 backdrop-blur-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]"
+                        >
+                            {/* Close button */}
+                            <button
+                                onClick={closeRelatedInfo}
+                                className="absolute top-4 right-4 cursor-pointer rounded-full p-2 text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white"
+                                aria-label="Close"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+
+                            {/* Heading */}
+                            <div className="mb-5">
+                                <span className="inline-block mb-2 text-xs font-bold tracking-widest uppercase text-emerald-400">
+                                    Learn More
+                                </span>
+                                <h3 className="text-2xl md:text-3xl font-bold text-white font-outfit">
+                                    {relatedInfo.heading}
+                                </h3>
+                            </div>
+
+                            {/* Summary */}
+                            <p className="mb-6 text-base text-white/80 leading-relaxed">
+                                {relatedInfo.summary}
+                            </p>
+
+                            {/* Key Points */}
+                            <ul className="space-y-3">
+                                {relatedInfo.points.map((point, idx) => (
+                                    <motion.li
+                                        key={`info-${idx}`}
+                                        initial={{ opacity: 0, x: -12 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.1 + idx * 0.08 }}
+                                        className="flex items-start gap-3 text-white/85"
+                                    >
+                                        <ChevronRight className="w-4 h-4 mt-1 shrink-0 text-emerald-400" />
+                                        <span className="text-[0.95rem] leading-relaxed">{point}</span>
+                                    </motion.li>
+                                ))}
+                            </ul>
+
+                            {/* Decorative bottom accent */}
+                            <div className="mt-6 h-[2px] w-full rounded-full bg-gradient-to-r from-emerald-400/50 via-blue-400/50 to-purple-400/50" />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -1,6 +1,17 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
   Activity,
   Bell,
   CalendarClock,
@@ -246,6 +257,59 @@ const VolunteerDashboardPage = () => {
           />
         </div>
       </motion.div>
+
+      {/* Volunteer Analytics Charts */}
+      <StaggerSection className="grid gap-4 xl:grid-cols-2">
+        <StaggerItem className="glass rounded-xl p-4">
+          <h3 className="mb-3 font-['Outfit'] text-lg font-semibold flex items-center gap-2">
+            <Activity className="h-5 w-5 text-emerald-300" />
+            Volunteer Hours
+          </h3>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={[
+                { month: 'Jan', hours: 22 }, { month: 'Feb', hours: 35 }, { month: 'Mar', hours: 48 },
+                { month: 'Apr', hours: 40 }, { month: 'May', hours: 55 }, { month: 'Jun', hours: 62 },
+              ]}>
+                <defs>
+                  <linearGradient id="volHoursFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.22)" />
+                <XAxis dataKey="month" stroke="var(--text-muted)" fontSize={11} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid var(--border-muted)', backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)' }} />
+                <Area type="monotone" dataKey="hours" stroke="#10b981" fill="url(#volHoursFill)" strokeWidth={2.5} animationDuration={900} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </StaggerItem>
+
+        <StaggerItem className="glass rounded-xl p-4">
+          <h3 className="mb-3 font-['Outfit'] text-lg font-semibold flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-indigo-300" />
+            Events Participation
+          </h3>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { event: 'Relief', attended: 3, total: 5 }, { event: 'Food Drive', attended: 4, total: 4 },
+                { event: 'Medical', attended: 2, total: 6 }, { event: 'Education', attended: 5, total: 5 },
+                { event: 'Clean City', attended: 1, total: 3 }, { event: 'Tech', attended: 3, total: 4 },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.22)" />
+                <XAxis dataKey="event" stroke="var(--text-muted)" fontSize={11} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid var(--border-muted)', backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)' }} />
+                <Bar dataKey="attended" fill="#6366f1" radius={[6, 6, 0, 0]} animationDuration={800} />
+                <Bar dataKey="total" fill="#6366f1" fillOpacity={0.25} radius={[6, 6, 0, 0]} animationDuration={1000} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </StaggerItem>
+      </StaggerSection>
 
       <StaggerSection className="grid gap-4 xl:grid-cols-3">
         <StaggerItem className="glass rounded-xl p-4 xl:col-span-2">

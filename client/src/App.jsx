@@ -22,6 +22,13 @@ const EmergencyModePage = lazy(() => import('./pages/EmergencyModePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const VolunteerDetailsPage = lazy(() => import('./pages/VolunteerDetailsPage'));
+const MessagesPage = lazy(() => import('./pages/MessagesPage'));
+const CSVUploadPage = lazy(() => import('./pages/CSVUploadPage'));
+const ActivityLogPage = lazy(() => import('./pages/ActivityLogPage'));
+const VolunteerMyEventsPage = lazy(() => import('./pages/VolunteerMyEventsPage'));
+const VolunteerTasksPage = lazy(() => import('./pages/VolunteerTasksPage'));
+const VolunteerNotificationsPage = lazy(() => import('./pages/VolunteerNotificationsPage'));
+const VolunteerChatbotPage = lazy(() => import('./pages/VolunteerChatbotPage'));
 
 const withSuspense = (Component) => (
   <Suspense fallback={<PageSkeleton />}>
@@ -49,6 +56,9 @@ const App = () => (
           <Route path="/volunteers/:id" element={withSuspense(VolunteerDetailsPage)} />
           <Route path="/resources" element={withSuspense(ResourcesPage)} />
           <Route path="/analytics" element={withSuspense(AnalyticsPage)} />
+          <Route path="/messages" element={withSuspense(MessagesPage)} />
+          <Route path="/csv-upload" element={withSuspense(CSVUploadPage)} />
+          <Route path="/activity-log" element={withSuspense(ActivityLogPage)} />
         </Route>
 
         {/* Volunteer only routes */}
@@ -57,6 +67,12 @@ const App = () => (
           <Route path="/volunteer-dashboard" element={withSuspense(VolunteerDashboardPage)} />
           <Route path="/leaderboard" element={withSuspense(LeaderboardPage)} />
           <Route path="/profile" element={withSuspense(ProfilePage)} />
+          <Route path="/my-events" element={withSuspense(VolunteerMyEventsPage)} />
+          <Route path="/assigned-tasks" element={withSuspense(VolunteerTasksPage)} />
+          <Route path="/volunteer-notifications" element={withSuspense(VolunteerNotificationsPage)} />
+          <Route path="/chatbot" element={withSuspense(VolunteerChatbotPage)} />
+          <Route path="/volunteer-csv" element={withSuspense(CSVUploadPage)} />
+          <Route path="/volunteer-activity" element={withSuspense(ActivityLogPage)} />
         </Route>
 
         {/* Shared routes */}
