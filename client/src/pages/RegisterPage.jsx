@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AnimatedButton from '../components/ui/AnimatedButton';
 import { useAuth } from '../context/AuthContext';
+import { firebaseAuth, firebaseGoogleProvider } from '../services/firebase';
 
 const RegisterPage = () => {
   const [form, setForm] = useState({
@@ -18,7 +20,7 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { register, loginAsRole } = useAuth();
+  const { register, loginAsRole, loginWithGoogle } = useAuth();
 
   useEffect(() => {
     const roleFromQuery = searchParams.get('role');
@@ -58,6 +60,24 @@ const RegisterPage = () => {
       navigate('/role-selection');
     } catch (err) {
       setError(err.response?.data?.message || 'Quick login failed');
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    setError('');
+    try {
+      const result = await signInWithPopup(firebaseAuth, firebaseGoogleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const idToken = credential?.idToken;
+
+      if (!idToken) {
+        throw new Error('Google credential token not available');
+      }
+
+      await loginWithGoogle(idToken, role);
+      navigate('/role-selection');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Google signup/login failed');
     }
   };
 
@@ -117,6 +137,20 @@ const RegisterPage = () => {
         <AnimatedButton type="submit" className="mt-5 w-full">
           Register
         </AnimatedButton>
+
+        <button
+          type="button"
+          onClick={handleGoogleRegister}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-muted)] bg-[var(--card-elevated)] px-3 py-2.5 text-sm font-semibold text-[var(--text-primary)]"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path fill="#EA4335" d="M9 7.2v3.6h5.1C13.88 12.9 11.7 14.4 9 14.4A5.4 5.4 0 1 1 9 3.6c1.48 0 2.84.56 3.87 1.48l2.55-2.55A8.96 8.96 0 0 0 9 0a9 9 0 1 0 0 18c5.2 0 8.64-3.66 8.64-8.82 0-.6-.06-1.2-.18-1.98H9Z"/>
+            <path fill="#34A853" d="M1.04 5.82 4 8a5.4 5.4 0 0 1 5-3.4c1.48 0 2.84.56 3.87 1.48l2.55-2.55A8.96 8.96 0 0 0 9 0 8.99 8.99 0 0 0 1.04 5.82Z"/>
+            <path fill="#FBBC05" d="M9 18c2.62 0 4.83-.86 6.44-2.34l-2.97-2.3A5.41 5.41 0 0 1 9 14.4 5.4 5.4 0 0 1 4.01 11l-2.95 2.27A9 9 0 0 0 9 18Z"/>
+            <path fill="#4285F4" d="M17.64 9.18c0-.6-.06-1.2-.18-1.98H9v3.6h5.1a4.77 4.77 0 0 1-1.63 2.56l2.97 2.3c1.74-1.6 2.2-3.98 2.2-6.48Z"/>
+          </svg>
+          Continue with Google
+        </button>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <AnimatedButton
