@@ -53,7 +53,7 @@ export const listRows = async (table, { filters = {}, orderBy = 'created_at', as
     withError(error);
   }
 
-  if (error && isSchemaMismatchError(error)) {
+  const getFilteredFallback = () => {
     const rows = [...getFallbackRows(table)];
     const filtered = rows.filter((row) =>
       Object.entries(filters).every(([key, value]) => {
@@ -71,10 +71,30 @@ export const listRows = async (table, { filters = {}, orderBy = 'created_at', as
       });
     }
 
-    return filtered.map(normalizeId);
+    return filtered;
+  };
+
+  if (error && isSchemaMismatchError(error)) {
+    return getFilteredFallback().map(normalizeId);
   }
 
-  return (data || []).map(normalizeId);
+  const dbRows = (data || []).map(normalizeId);
+  const fallbackRows = getFilteredFallback().map(normalizeId);
+
+  if (!fallbackRows.length) return dbRows;
+  if (!dbRows.length) return fallbackRows;
+
+  const seen = new Set(dbRows.map((row) => row.id || row._id));
+  const merged = [...dbRows];
+  fallbackRows.forEach((row) => {
+    const id = row.id || row._id;
+    if (!seen.has(id)) {
+      merged.push(row);
+      seen.add(id);
+    }
+  });
+
+  return merged;
 };
 
 export const getById = async (table, id) => {
@@ -83,7 +103,16 @@ export const getById = async (table, id) => {
     const row = getFallbackRows(table).find((item) => item.id === id);
     return row ? normalizeId(row) : null;
   }
-  if (error) return null;
+  if (error) {
+    const row = getFallbackRows(table).find((item) => item.id === id);
+    return row ? normalizeId(row) : null;
+  }
+
+  if (!data) {
+    const row = getFallbackRows(table).find((item) => item.id === id);
+    return row ? normalizeId(row) : null;
+  }
+
   return normalizeId(data);
 };
 
